@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Monitor Mural de Producción y Alertas Clínicas Tempranas en Tiempo Real - Central de Alimentación CAPREDENA Limache" />
+  <title>Monitor Mural Cocina (Solo Lectura) | CAPREDENA Limache</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <!--
+    MODULO 3: MONITOR MURAL DE PRODUCCION - CENTRAL DE ALIMENTACION (COCINA)
+    Modo Solo Lectura Estricto (Cero controles de escritura clinica),
+    Alto Contraste WCAG 2.1 Nivel AAA (>= 7:1) legible a 3 metros y Socket.IO en vivo.
+  -->
+  <header class="topbar" role="banner">
+    <div class="topbar__brand">
+      <div class="topbar__logo" aria-hidden="true">CA</div>
+      <div>
+        <h1 class="topbar__title">
+          Monitor Mural Central de Alimentación &bull; CAPREDENA Limache
+        </h1>
+        <p id="cocina-user-info" class="topbar__subtitle">
+          Modo Estricto Solo Lectura &bull; Sincronización Automática de Bandejas e IDDSI
+        </p>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <div id="ws-status-pill" class="topbar__live" aria-live="polite">
+        <span class="topbar__live-dot" aria-hidden="true"></span>
+        <span id="ws-status-text">EN VIVO (WebSockets)</span>
+      </div>
+      <div id="live-clock" class="topbar__clock" aria-label="Hora actual del turno">
+        00:00:00
+      </div>
+      <span id="role-badge-cocina" class="topbar__badge">
+        Producción Cocina (Solo Lectura)
+      </span>
+      <a
+        href="/clinico.html"
+        id="link-volver-clinico"
+        class="btn btn--sm u-hidden"
+      >
+        Volver a Módulo Clínico
+      </a>
+      <button type="button" id="btn-logout-cocina" class="btn btn--danger btn--sm">
+        Cerrar Sesión
+      </button>
+    </div>
+  </header>
+
+  <main class="container" role="main">
+    <!-- FILA SUPERIOR DE 4 KPIS INTELIGENTES EN TIEMPO REAL -->
+    <section class="kpi-grid" aria-label="Indicadores clave de producción del turno">
+      <article class="kpi-card">
+        <span class="kpi-card__label">Total Censo Activo (Bandejas)</span>
+        <strong id="kpi-bandejas" class="kpi-card__value">--</strong>
+        <span class="kpi-card__meta">Bandejas hospitalarias vigentes en Salas 1 a 4</span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__label">Prevalencia de Disfagia</span>
+        <strong id="kpi-disfagia" class="kpi-card__value">--</strong>
+        <span id="kpi-disfagia-meta" class="kpi-card__meta">
+           Texturas modificadas (Sólido &lt; 7 o Líquido &gt; 0)
+        </span>
+      </article>
+
+      <article class="kpi-card kpi-card--success">
+        <span class="kpi-card__label">Líquidos Poco Espesos (IDDSI 2)</span>
+        <strong id="kpi-poco-espeso" class="kpi-card__value">--</strong>
+        <span id="kpi-espesante-gramos" class="kpi-card__meta">
+          Proyección diaria de espesante: -- g/día
+        </span>
+      </article>
+
+      <article class="kpi-card kpi-card--danger">
+        <span class="kpi-card__label">Novedades del Turno (24h)</span>
+        <strong id="kpi-novedades-24h" class="kpi-card__value">--</strong>
+        <span id="kpi-ultima-sinc" class="kpi-card__meta">
+          Última sincronización: --
+        </span>
+      </article>
+    </section>
+
+    <!-- GRILLA CENTRAL DIVIDIDA: IZQUIERDA (BIG DATA + MAPA SALAS) | DERECHA (ALERTAS 24H) -->
+    <div class="cocina-grid">
+      <!-- COLUMNA IZQUIERDA -->
+      <section class="panel" aria-labelledby="titulo-resumen-produccion">
+        <header class="panel__header">
+          <div>
+            <h2 id="titulo-resumen-produccion" class="panel__title">
+              Resumen Inteligente de Producción y Despacho por Sala/Cama
+            </h2>
+            <p class="panel__subtitle">
+              Consolidado SQL en 3FN para línea de porcionamiento y etiquetado de bandejas.
+            </p>
+          </div>
+          <div class="tabs__group">
+            <button
+              type="button"
+              id="cocina-tab-barras"
+              class="tabs__btn tabs__btn--active"
+            >
+              Barras Régimen / IDDSI
+            </button>
+            <button type="button" id="cocina-tab-mapa" class="tabs__btn">
+              Mapa por Sala y Cama
+            </button>
+          </div>
+        </header>
+
+        <div class="panel__body">
+          <!-- SUBVISTA A: BARRAS HORIZONTALES DINAMICAS EN CSS3 PURO -->
+          <div id="subview-barras">
+            <div class="bar-section">
+              <h3 class="bar-section__title">
+                Distribución de Bandejas por Régimen Dietoterapéutico
+              </h3>
+              <div id="bars-regimenes" class="bar-list"></div>
+            </div>
+
+            <div class="bar-section">
+              <h3 class="bar-section__title">
+                Consistencias Normativas IDDSI — Alimentos Sólidos (Niveles 3 al 7)
+              </h3>
+              <div id="bars-iddsi-solido" class="bar-list"></div>
+            </div>
+
+            <div class="bar-section">
+              <h3 class="bar-section__title">
+                Consistencias Normativas IDDSI — Hidratación y Líquidos (Niveles 0 al 4)
+              </h3>
+              <div id="bars-iddsi-liquido" class="bar-list"></div>
+            </div>
+          </div>
+
+          <!-- SUBVISTA B: MATRIZ DE CONSISTENCIAS IDDSI POR SALA Y CAMA -->
+          <div id="subview-mapa" class="u-hidden">
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;"
+            >
+              <div class="tabs__group" id="sala-selector-buttons">
+                <button
+                  type="button"
+                  data-sala="1"
+                  class="tabs__btn tabs__btn--active"
+                >
+                  Sala 1
+                </button>
+                <button type="button" data-sala="2" class="tabs__btn">
+                  Sala 2
+                </button>
+                <button type="button" data-sala="3" class="tabs__btn">
+                  Sala 3
+                </button>
+                <button type="button" data-sala="4" class="tabs__btn">
+                  Sala 4
+                </button>
+              </div>
+              <span id="mapa-sala-resumen" class="panel__subtitle"></span>
+            </div>
+
+            <div id="room-beds-container" class="room-grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COLUMNA DERECHA: PANEL DE ALERTAS CLINICAS TEMPRANAS (ULTIMAS 24 HORAS) -->
+      <section class="panel" aria-labelledby="titulo-alertas-24h">
+        <header class="panel__header">
+          <div>
+            <h2 id="titulo-alertas-24h" class="panel__title">
+              Alertas Clínicas Tempranas (Últimas 24 Horas)
+            </h2>
+            <p class="panel__subtitle">
+              <span class="tag tag--violet">Violeta: Modificación</span>
+              <span class="tag tag--success">Verde: Ingreso</span>
+              <span class="tag tag--danger">Rojo: Alta (Suspender)</span>
+            </p>
+          </div>
+        </header>
+
+        <div class="panel__body">
+          <div
+            id="alerts-feed"
+            class="alert-feed"
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions text"
+          >
+            <p class="panel__subtitle">Cargando alertas clínicas recientes...</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast-cocina" class="toast u-hidden" role="status" aria-live="assertive"></div>
+
+  <!-- Cliente oficial Socket.IO servido localmente por nuestro servidor Node.js -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/cocina.js"></script>
+</body>
+</html>

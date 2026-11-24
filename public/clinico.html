@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Módulo Clínico Nutricionista - Gestión de Censo, Prescripción IDDSI y Repositorio Big Data CAPREDENA Limache" />
+  <title>Módulo Clínico Nutricionista | CAPREDENA Limache</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <!-- Aviso preventivo de cierre automatico por inactividad (RF10: 15 minutos) -->
+  <div id="inactivity-banner" class="session-banner u-hidden" role="alert">
+    <span id="inactivity-message">
+      Seguridad Clínica (RF10): Su sesión se cerrará pronto por inactividad.
+    </span>
+    <button type="button" id="btn-keep-alive" class="btn btn--sm btn--primary">
+      Mantener Sesión Activa
+    </button>
+  </div>
+
+  <!-- Barra Superior Institucional -->
+  <header class="topbar" role="banner">
+    <div class="topbar__brand">
+      <div class="topbar__logo" aria-hidden="true">CL</div>
+      <div>
+        <h1 class="topbar__title">CAPREDENA Limache &bull; Gestión Dietoterapéutica</h1>
+        <p id="clinico-user-name" class="topbar__subtitle">
+          Unidad de Nutrición Clínica Institucional
+        </p>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <span class="topbar__badge">Nutricionista Clínico (Lectura y Escritura)</span>
+      <button type="button" id="btn-quick-ingreso" class="btn btn--primary btn--sm">
+        + Nuevo Ingreso Paciente
+      </button>
+      <a href="/cocina.html" class="btn btn--sm" title="Abrir vista Monitor Mural de Cocina">
+        Ver Monitor Cocina
+      </a>
+      <button
+        type="button"
+        id="btn-restaurar-demo"
+        class="btn btn--sm"
+        title="Reinicia el escenario demo limpio a 70 pacientes activos (Sala 1 Cama 8 libre)"
+      >
+        Restaurar Censo Demo (70)
+      </button>
+      <button
+        type="button"
+        id="btn-simular-inactividad"
+        class="btn btn--sm"
+        title="Atajo de demostración QA (Alt+Shift+I): activa aviso de cierre por inactividad RF10 en 10s"
+      >
+        Probar RF10 (10s)
+      </button>
+      <button type="button" id="btn-logout" class="btn btn--danger btn--sm">
+        Cerrar Sesión Segura
+      </button>
+    </div>
+  </header>
+
+  <main class="container" role="main">
+    <!-- Navegacion entre Censo Activo y Repositorio Big Data (Historial_Minutas) -->
+    <nav class="tabs" aria-label="Vistas del módulo clínico">
+      <div class="tabs__group">
+        <button type="button" id="view-tab-censo" class="tabs__btn tabs__btn--active">
+          Gestión de Censo Activo (<span id="badge-count-activos">70</span>)
+        </button>
+        <button type="button" id="view-tab-historial" class="tabs__btn">
+          Repositorio Big Data (Historial_Minutas)
+        </button>
+      </div>
+      <div class="panel__subtitle" id="camas-resumen-bar">
+        Cargando disponibilidad de camas por sala...
+      </div>
+    </nav>
+
+    <!-- =======================================================================
+         SECCION 1: GESTION DE CENSO ACTIVO + 3 OPERACIONES CRUD (<= 3 CLICS)
+         ======================================================================= -->
+    <section id="section-censo" aria-label="Gestión de Censo Activo y Prescripción">
+      <div class="workspace-grid">
+        <!-- PANEL IZQUIERDO: CENSO ACTIVO (~70 PACIENTES) CON BUSCADOR INSTANTANEO -->
+        <section class="panel" aria-labelledby="titulo-censo">
+          <header class="panel__header">
+            <div>
+              <h2 id="titulo-censo" class="panel__title">
+                Censo Hospitalario Activo Seudonimizado
+              </h2>
+              <p class="panel__subtitle">
+                Seleccione <strong>Editar</strong> o <strong>Alta</strong> en cualquier fila para operar en máximo 3 clics.
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <label for="search-censo" class="u-sr-only">Buscar por ficha, sala o cama</label>
+              <input
+                type="search"
+                id="search-censo"
+                class="form__input form__input--search"
+                placeholder="Buscar ficha (#042), sala, cama o dieta..."
+              />
+              <label for="filter-sala" class="u-sr-only">Filtrar por sala</label>
+              <select id="filter-sala" class="form__select" style="width: auto;">
+                <option value="">Todas las Salas</option>
+                <option value="1">Sala 1</option>
+                <option value="2">Sala 2</option>
+                <option value="3">Sala 3</option>
+                <option value="4">Sala 4</option>
+                <option value="DISFAGIA">Solo Disfagia IDDSI</option>
+              </select>
+            </div>
+          </header>
+
+          <div class="table-wrap">
+            <table class="data-table" aria-describedby="titulo-censo">
+              <thead>
+                <tr>
+                  <th scope="col">Ficha</th>
+                  <th scope="col">Ubicación</th>
+                  <th scope="col">Régimen Actual</th>
+                  <th scope="col">IDDSI Sólido</th>
+                  <th scope="col">IDDSI Líquido</th>
+                  <th scope="col">Acciones (&le;3 clics)</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-censo">
+                <tr>
+                  <td colspan="6">Cargando censo hospitalario en 3FN...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PANEL DERECHO: LOS 3 FORMULARIOS CRUD ACCESIBLES -->
+        <aside id="crud-panel" class="panel panel--sticky" aria-labelledby="crud-panel-title">
+          <header class="panel__header">
+            <div>
+              <h2 id="crud-panel-title" class="panel__title">
+                Operación Clínica Dietoterapéutica
+              </h2>
+              <p id="crud-panel-subtitle" class="panel__subtitle">
+                Transacciones ACID sincronizadas en vivo con Cocina (&lt; 2.0s)
+              </p>
+            </div>
+          </header>
+
+          <div class="panel__body">
+            <!-- Conmutador rapido de los 3 formularios CRUD -->
+            <div class="tabs__group" style="margin-bottom: 1rem;">
+              <button type="button" id="mode-btn-editar" class="tabs__btn tabs__btn--active">
+                1. Modificar Minuta
+              </button>
+              <button type="button" id="mode-btn-ingreso" class="tabs__btn">
+                2. Nuevo Ingreso
+              </button>
+              <button type="button" id="mode-btn-alta" class="tabs__btn">
+                3. Alta Clínica
+              </button>
+            </div>
+
+            <!-- FORMULARIO CRUD #1: MODIFICAR PRESCRIPCION / CONSISTENCIA IDDSI -->
+            <form id="form-crud-editar" class="form">
+              <input type="hidden" id="edit-id-paciente" />
+              <div id="edit-patient-banner" class="form__notice form__notice--violet">
+                Pulse <strong>Editar</strong> en un paciente del listado izquierdo para cargar su minuta en 1 clic.
+              </div>
+
+              <div class="form__group">
+                <label for="edit-regimen" class="form__label">Régimen Dietoterapéutico</label>
+                <select id="edit-regimen" class="form__select" required></select>
+              </div>
+
+              <div class="form__row">
+                <div class="form__group">
+                  <label for="edit-iddsi-solido" class="form__label">IDDSI Sólidos (3 a 7)</label>
+                  <select id="edit-iddsi-solido" class="form__select" required></select>
+                </div>
+                <div class="form__group">
+                  <label for="edit-iddsi-liquido" class="form__label">IDDSI Líquidos (0 a 4)</label>
+                  <select id="edit-iddsi-liquido" class="form__select" required></select>
+                </div>
+              </div>
+
+              <div class="form__group">
+                <label for="edit-alergias" class="form__label">
+                  Observaciones Clínicas / Alergias Alimentarias
+                </label>
+                <textarea
+                  id="edit-alergias"
+                  class="form__textarea"
+                  rows="2"
+                  maxlength="255"
+                  placeholder="Ej: Alergia al huevo, espesante 2.4g por servicio..."
+                ></textarea>
+              </div>
+
+              <div class="form__actions">
+                <button type="submit" class="btn btn--primary btn--full">
+                  Guardar Cambio y Notificar a Cocina
+                </button>
+              </div>
+            </form>
+
+            <!-- FORMULARIO CRUD #2: NUEVO INGRESO HOSPITALARIO -->
+            <form id="form-crud-ingreso" class="form u-hidden">
+              <div class="form__notice form__notice--success">
+                Asigna cama libre verificada y registra atómicamente el hecho <strong>INGRESO</strong> en Big Data.
+              </div>
+
+              <div class="form__group">
+                <label for="ing-ficha" class="form__label">
+                  Código de Ficha Seudonimizado (Ley 19.628 / 20.584)
+                </label>
+                <input
+                  type="text"
+                  id="ing-ficha"
+                  class="form__input"
+                  maxlength="30"
+                  required
+                />
+              </div>
+
+              <div class="form__row">
+                <div class="form__group">
+                  <label for="ing-sala" class="form__label">Sala Hospitalaria</label>
+                  <select id="ing-sala" class="form__select" required>
+                    <option value="1">Sala 1</option>
+                    <option value="2">Sala 2</option>
+                    <option value="3">Sala 3</option>
+                    <option value="4">Sala 4</option>
+                  </select>
+                </div>
+                <div class="form__group">
+                  <label for="ing-cama" class="form__label">Cama Disponible</label>
+                  <select id="ing-cama" class="form__select" required></select>
+                </div>
+              </div>
+
+              <div class="form__group">
+                <label for="ing-regimen" class="form__label">Régimen Inicial</label>
+                <select id="ing-regimen" class="form__select" required></select>
+              </div>
+
+              <div class="form__row">
+                <div class="form__group">
+                  <label for="ing-iddsi-solido" class="form__label">IDDSI Sólido Inicial</label>
+                  <select id="ing-iddsi-solido" class="form__select" required></select>
+                </div>
+                <div class="form__group">
+                  <label for="ing-iddsi-liquido" class="form__label">IDDSI Líquido Inicial</label>
+                  <select id="ing-iddsi-liquido" class="form__select" required></select>
+                </div>
+              </div>
+
+              <div class="form__group">
+                <label for="ing-alergias" class="form__label">Observaciones / Alergias</label>
+                <input
+                  type="text"
+                  id="ing-alergias"
+                  class="form__input"
+                  maxlength="255"
+                  value="Sin alergias alimentarias conocidas."
+                />
+              </div>
+
+              <div class="form__actions">
+                <button type="submit" class="btn btn--success btn--full">
+                  Confirmar Ingreso Hospitalario
+                </button>
+              </div>
+            </form>
+
+            <!-- FORMULARIO CRUD #3: CONFIRMACION DE ALTA CLINICA -->
+            <form id="form-crud-alta" class="form u-hidden">
+              <input type="hidden" id="alta-id-paciente" />
+              <div id="alta-patient-summary" class="form__notice form__notice--danger">
+                Seleccione el botón <strong>Alta</strong> en la fila del paciente a egresar.
+              </div>
+
+              <div class="form__group">
+                <label for="alta-motivo" class="form__label">Motivo Estandarizado de Egreso</label>
+                <select id="alta-motivo" class="form__select" required>
+                  <option value="Alta Médica Domiciliaria">
+                    Alta Médica Domiciliaria
+                  </option>
+                  <option value="Alta médica confirmada por evolución clínica favorable">
+                    Alta médica confirmada por evolución clínica favorable
+                  </option>
+                  <option value="Derivación a centro hospitalario de mayor complejidad">
+                    Derivación a centro hospitalario de mayor complejidad
+                  </option>
+                  <option value="Egreso administrativo institucional">
+                    Egreso administrativo institucional
+                  </option>
+                </select>
+              </div>
+
+              <div class="form__notice">
+                <strong>Aviso de Persistencia Big Data:</strong> El paciente NO será eliminado de la base de datos. Su cama quedará libre de inmediato para nuevos ingresos y la traza histórica permanecerá inmutable en <code>Historial_Minutas</code>, enviando alerta roja a Cocina para suspender su bandeja.
+              </div>
+
+              <div class="form__actions">
+                <button type="submit" class="btn btn--danger btn--full">
+                  Confirmar Alta Clínica y Liberar Cama
+                </button>
+              </div>
+            </form>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         SECCION 2: REPOSITORIO BIG DATA E HISTORIAL INMUTABLE (Historial_Minutas)
+         ======================================================================= -->
+    <section id="section-historial" class="u-hidden" aria-label="Repositorio Big Data Historial_Minutas">
+      <div class="kpi-grid">
+        <article class="kpi-card">
+          <span class="kpi-card__label">Transacciones Auditadas</span>
+          <strong id="hist-kpi-total" class="kpi-card__value">0</strong>
+          <span class="kpi-card__meta">Hechos inmutables en Historial_Minutas</span>
+        </article>
+        <article class="kpi-card kpi-card--success">
+          <span class="kpi-card__label">Ingresos Registrados</span>
+          <strong id="hist-kpi-ingresos" class="kpi-card__value">0</strong>
+          <span class="kpi-card__meta">Admisiones hospitalarias trazadas</span>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-card__label">Modificaciones IDDSI / Dieta</span>
+          <strong id="hist-kpi-modificaciones" class="kpi-card__value">0</strong>
+          <span class="kpi-card__meta">Ajustes clínicos evolutivos</span>
+        </article>
+        <article class="kpi-card kpi-card--danger">
+          <span class="kpi-card__label">Altas Confirmadas</span>
+          <strong id="hist-kpi-altas" class="kpi-card__value">0</strong>
+          <span id="hist-kpi-top-regimen" class="kpi-card__meta">Régimen líder: --</span>
+        </article>
+      </div>
+
+      <section class="panel" aria-labelledby="titulo-auditoria">
+        <header class="panel__header">
+          <div>
+            <h2 id="titulo-auditoria" class="panel__title">
+              Auditoría Transaccional Inmutable (Big Data Clínico)
+            </h2>
+            <p class="panel__subtitle">
+              Filtre dinámicamente por código de ficha, tipo de movimiento o rango de fechas.
+            </p>
+          </div>
+        </header>
+
+        <div class="panel__body">
+          <form id="form-filtros-historial" class="form" style="margin-bottom: 1rem;">
+            <div class="form__row form__row--filters">
+              <div class="form__group">
+                <label for="hist-paciente" class="form__label">Código de Ficha</label>
+                <input
+                  type="text"
+                  id="hist-paciente"
+                  class="form__input"
+                  placeholder="Ej: Pac. #008"
+                />
+              </div>
+              <div class="form__group">
+                <label for="hist-tipo" class="form__label">Tipo de Movimiento</label>
+                <select id="hist-tipo" class="form__select">
+                  <option value="">Todos los movimientos</option>
+                  <option value="INGRESO">INGRESO</option>
+                  <option value="MODIFICACION">MODIFICACION</option>
+                  <option value="ALTA">ALTA</option>
+                </select>
+              </div>
+              <div class="form__group">
+                <label for="hist-desde" class="form__label">Fecha Desde</label>
+                <input type="date" id="hist-desde" class="form__input" />
+              </div>
+              <div class="form__group">
+                <label for="hist-hasta" class="form__label">Fecha Hasta</label>
+                <input type="date" id="hist-hasta" class="form__input" />
+              </div>
+            </div>
+            <div class="form__actions">
+              <button type="submit" class="btn btn--primary btn--sm">Aplicar Filtros</button>
+              <button type="button" id="btn-limpiar-historial" class="btn btn--sm">
+                Limpiar Filtros
+              </button>
+            </div>
+          </form>
+
+          <div class="table-wrap">
+            <table class="data-table" aria-describedby="titulo-auditoria">
+              <thead>
+                <tr>
+                  <th scope="col">ID Hecho</th>
+                  <th scope="col">Fecha / Hora (UTC)</th>
+                  <th scope="col">Movimiento</th>
+                  <th scope="col">Paciente / Ubicación</th>
+                  <th scope="col">Prescripción Asignada (Régimen + IDDSI)</th>
+                  <th scope="col">Detalle Clínico y Autor</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-historial">
+                <tr>
+                  <td colspan="6">Consultando repositorio Big Data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem;"
+          >
+            <span id="hist-paginacion-info" class="panel__subtitle">Página 1</span>
+            <div style="display: flex; gap: 0.5rem;">
+              <button type="button" id="btn-hist-prev" class="btn btn--sm">&laquo; Anterior</button>
+              <button type="button" id="btn-hist-next" class="btn btn--sm">Siguiente &raquo;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast u-hidden" role="status" aria-live="polite"></div>
+
+  <script src="/js/clinico.js"></script>
+</body>
+</html>

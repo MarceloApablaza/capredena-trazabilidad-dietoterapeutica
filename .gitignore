@@ -1,0 +1,9 @@
+# Dependencias y artefactos locales
+node_modules/
+database/*.sqlite
+database/*.sqlite-journal
+database/*.sqlite-wal
+database/*.sqlite-shm
+.env
+.env.local
+npm-debug.log*

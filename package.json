@@ -1,0 +1,38 @@
+{
+  "name": "capredena-trazabilidad-dietoterapeutica",
+  "version": "1.0.0",
+  "description": "Sistema Web de Trazabilidad Dietoterapeutica y Alertas Clinicas Tempranas para Pacientes Institucionalizados (CAPREDENA Limache)",
+  "main": "server.js",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node database/seed.js"
+  },
+  "keywords": [
+    "CAPREDENA",
+    "IDDSI",
+    "Dietoterapia",
+    "BigData-Clinico",
+    "Trazabilidad",
+    "Socket.IO",
+    "MVC",
+    "3FN"
+  ],
+  "author": "Proyecto de Titulo - Ingenieria / Arquitectura de Software",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^13.1.1",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.8.1",
+    "swagger-ui-express": "^5.0.1"
+  }
+}

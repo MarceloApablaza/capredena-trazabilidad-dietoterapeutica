@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Portal Institucional de Autenticación y Gestión de Credenciales - Sistema de Trazabilidad Dietoterapéutica CAPREDENA Limache" />
+  <title>Acceso Institucional | CAPREDENA Limache - Trazabilidad Dietoterapéutica</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <!--
+    MODULO 1: PORTAL DE AUTENTICACION Y GESTION DE CREDENCIALES
+    Cumple WCAG 2.1 Nivel AAA (>= 7:1), HTML5 semantico puro y metodologia BEM.
+  -->
+  <main class="auth" role="main">
+    <section class="auth__card" aria-labelledby="titulo-portal">
+      <header class="auth__header">
+        <span class="auth__eyebrow">CAPREDENA Limache &bull; Red de Salud</span>
+        <h1 id="titulo-portal" class="auth__title">
+          Trazabilidad Dietoterapéutica e IDDSI
+        </h1>
+        <p class="auth__desc">
+          Sistema Clínico de Prescripción Nutricional, Auditoría Big Data y Alertas Tempranas en Tiempo Real.
+        </p>
+      </header>
+
+      <!-- Selector de vista: Inicio de Sesion vs Recuperacion por Token -->
+      <nav class="tabs" aria-label="Opciones de acceso">
+        <div class="tabs__group">
+          <button
+            type="button"
+            id="tab-btn-login"
+            class="tabs__btn tabs__btn--active"
+            aria-selected="true"
+          >
+            Iniciar Sesión
+          </button>
+          <button
+            type="button"
+            id="tab-btn-recovery"
+            class="tabs__btn"
+            aria-selected="false"
+          >
+            Recuperar Contraseña
+          </button>
+        </div>
+      </nav>
+
+      <!-- Mensajes de estado accesibles con aria-live -->
+      <div
+        id="auth-feedback"
+        class="form__notice u-hidden"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <!-- VISTA A: FORMULARIO DE INICIO DE SESION SEGURO (JWT + BCRYPT) -->
+      <form id="form-login" class="form" novalidate>
+        <div class="form__group">
+          <label for="login-correo" class="form__label">Correo Institucional</label>
+          <input
+            type="email"
+            id="login-correo"
+            name="correo_institucional"
+            class="form__input"
+            placeholder="usuario@capredena.gob.cl"
+            autocomplete="username"
+            required
+          />
+        </div>
+
+        <div class="form__group">
+          <label for="login-password" class="form__label">Contraseña</label>
+          <input
+            type="password"
+            id="login-password"
+            name="password"
+            class="form__input"
+            placeholder="Ingrese su clave institucional"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <div class="form__actions">
+          <button type="submit" id="btn-submit-login" class="btn btn--primary btn--full">
+            Ingresar al Sistema Seguro
+          </button>
+        </div>
+      </form>
+
+      <!-- VISTA B: RECUPERACION Y RESTABLECIMIENTO POR TOKEN TEMPORAL (15 MIN) -->
+      <div id="panel-recovery" class="u-hidden">
+        <form id="form-solicitar-token" class="form" novalidate>
+          <p class="panel__subtitle">
+            Paso 1: Solicite un código único temporal (vigencia máxima: 15 minutos).
+          </p>
+          <div class="form__group">
+            <label for="rec-correo" class="form__label">Correo Institucional Registrado</label>
+            <input
+              type="email"
+              id="rec-correo"
+              class="form__input"
+              placeholder="nutricion.clinica@capredena.gob.cl"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn--primary btn--full">
+            Generar Token de Recuperación
+          </button>
+        </form>
+
+        <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;" />
+
+        <form id="form-restablecer-clave" class="form" novalidate>
+          <p class="panel__subtitle">
+            Paso 2: Ingrese el token recibido y defina su nueva contraseña (mín. 8 caracteres alfanuméricos).
+          </p>
+          <div class="form__group">
+            <label for="res-token" class="form__label">Token Temporal</label>
+            <input
+              type="text"
+              id="res-token"
+              class="form__input"
+              placeholder="Ej: TKN-8A4F-CAPR"
+              required
+            />
+          </div>
+          <div class="form__group">
+            <label for="res-password" class="form__label">Nueva Contraseña Institucional</label>
+            <input
+              type="password"
+              id="res-password"
+              class="form__input"
+              placeholder="Mínimo 8 caracteres (letras y números)"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn--success btn--full">
+            Validar Token y Actualizar Contraseña
+          </button>
+        </form>
+      </div>
+
+      <!-- ACCESO RAPIDO DISCRETO PARA EVALUACION ACADEMICA / DEMO -->
+      <aside class="auth__demo" aria-label="Credenciales de prueba institucionales">
+        <p class="auth__demo-title">
+          Credenciales de Prueba (Autocompletado Rápido para Evaluación):
+        </p>
+        <div class="auth__demo-grid">
+          <button type="button" id="demo-clinico" class="btn btn--sm">
+            Perfil Nutricionista (CLINICO)
+          </button>
+          <button type="button" id="demo-cocina" class="btn btn--sm">
+            Perfil Cocina (PRODUCCION)
+          </button>
+        </div>
+        <p class="panel__subtitle" style="margin-top: 0.65rem;">
+          Documentación interactiva OpenAPI 3.0 disponible en
+          <a href="/api/docs" style="color: var(--text);">/api/docs</a>
+        </p>
+      </aside>
+    </section>
+  </main>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>
